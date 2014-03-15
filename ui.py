@@ -1,5 +1,6 @@
 import curses
 import curses.panel
+import curses.textpad
 
 
 class UI:
@@ -115,13 +116,18 @@ class _MainContent:
 
 
 class Dialog:
-    def __init__(self, y, x, begin_y, begin_x, title):
+    def __init__(self, y, x, begin_y, begin_x, title, close):
         self.window = curses.newwin(y, x, begin_y, begin_x)
+        self.window.bkgd(curses.A_REVERSE)
+        self.window.box()
         self.window.addstr(0, 1, "| {0} |".format(title))
+        self.window.addstr(y - 1, (x - 1) - (len(close) + 4), "| {0} |".format(close))
         self.panel = curses.panel.new_panel(self.window)
-
 
 class SearchDialog(Dialog):
     def __init__(self, screen):
         y, x = screen.getmaxyx()
-        Dialog.__init__(self, 5, 25, (y / 2) - 3, (x / 2) - 8)
+        Dialog.__init__(self, 5, 40, int((y / 2) - 3), int((x / 2) - 20), "Search", "ENTER to search")
+        self.search_box = self.window.derwin(1, 20, 2, 2)
+        curses.panel.update_panels()
+        curses.doupdate()

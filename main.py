@@ -49,6 +49,7 @@ def main_loop(screen):
             break
         elif key == 111: # o key
             dialog_loop(screen, SearchDialog(screen))
+            ui.refresh()
         elif key == 47: # / key
             search(ui, "", "", "1080p", "")
         elif key == curses.KEY_RESIZE: # Terminal was resized
@@ -70,7 +71,16 @@ def main_loop(screen):
         #elif key == curses.KEY_RIGHT:
 
 
-
+def dialog_loop(screen, dialog):
+    curses.curs_set(1)
+    curses.echo()
+    while True:
+        key = screen.getch()
+        if key == 27:
+            del dialog
+            curses.curs_set(0)
+            curses.noecho()
+            break
 
 if __name__ == "__main__":
     curses.wrapper(main)
