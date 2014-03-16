@@ -1,5 +1,7 @@
 {
-  "movie_dir": "", 
+  "movie_dir": "",
   "tc_ip": "localhost",
-  "tc_port": 9091
+  "tc_port": 9091,
+  "quality": "",
+  "sort": ""
 }

@@ -8,7 +8,7 @@ class UI:
         # Get screen dimensions
         y, x = screen.getmaxyx()
         self.screen = screen
-        self.top_bar = _Bar(y, x, "YTS", "/ Search | o Options | q Quit")
+        self.top_bar = _Bar(y, x, "YTS", "/ Search | q Quit")
         self.main_content = _MainContent(y, x)
         self.bottom_bar = _Bar(y, x, "Transmission", "", True)
         self.update()
@@ -66,7 +66,6 @@ class _Bar:
         self.window.addstr(0, 0, self.left)
         self.window.addstr(0, x - len(self.right) - 1, self.right)
 
-
     def update_content(self, left, right):
         if left:
             self.left = left
@@ -80,9 +79,10 @@ class _MainContent:
         self.selected = 0
         self.has_searched = False
         self.list = {}
+        self.message = "Press / to search"
         # Build the content box
         self.window = curses.newwin(y - 2, x, 1, 0)
-        self.window.addstr(int((y - 1) / 2), int((x / 2) - 8), "Press / to search")
+        self.window.addstr(int((y - 2) / 2), int((x / 2) - 8), self.message)
         self.panel = curses.panel.new_panel(self.window)
 
     def refresh(self, y, x):
@@ -90,12 +90,12 @@ class _MainContent:
         self.window.erase()
         self.window.resize(y - 1, x)
         # Rebuild content
-        if self.has_searched:
-            self.print_list(y - 2, x)
+        if self.has_searched and self.list is not -1:
+            self.print_content(x)
         else:
-            self.window.addstr(int((y - 1) / 2), int((x / 2) - 8), "Press / to search")
+            self.window.addstr(int((y - 2) / 2), int((x / 2) - 8), self.message)
 
-    def print_list(self, y, x):
+    def print_content(self, x):
         # Printing results
         for i, item in enumerate(self.list):
             # Constructing strings
@@ -115,7 +115,7 @@ class _MainContent:
             self.window.attroff(curses.A_REVERSE)
 
 
-class Dialog:
+class _Dialog:
     def __init__(self, y, x, begin_y, begin_x, title, close):
         self.window = curses.newwin(y, x, begin_y, begin_x)
         self.window.bkgd(curses.A_REVERSE)
@@ -124,10 +124,47 @@ class Dialog:
         self.window.addstr(y - 1, (x - 1) - (len(close) + 4), "| {0} |".format(close))
         self.panel = curses.panel.new_panel(self.window)
 
-class SearchDialog(Dialog):
+
+class SearchDialog(_Dialog):
     def __init__(self, screen):
         y, x = screen.getmaxyx()
-        Dialog.__init__(self, 5, 40, int((y / 2) - 3), int((x / 2) - 20), "Search", "ENTER to search")
-        self.search_box = self.window.derwin(1, 20, 2, 2)
+        _Dialog.__init__(self, 6, 40, int((y / 2) - 3), int((x / 2) - 20), "Search", "ENTER to search")
+        self.window.addstr(2, 2, "Search for:")
+        self.input_field = self.window.derwin(1, 36, 3, 2)
+        self.input_field.bkgd(curses.A_DIM)
+        curses.panel.update_panels()
+        curses.doupdate()
+
+    def redraw_input(self, new_string):
+        self.input_field.addstr(0, 0, "                                   ")
+        self.input_field.addstr(0, 0, new_string)
+
+
+class DetailsDialog(_Dialog):
+    def __init__(self, screen, movie_details):
+        self.details = "Genre: {0}   Runtime: {1} min   Rating: {2}\n\n" \
+                       "Description:\n".format(movie_details["Genre1"], movie_details["MovieRuntime"],
+                                               movie_details["MovieRating"])
+        description = movie_details["LongDescription"].split(" ")
+        y, x = screen.getmaxyx()
+        _Dialog.__init__(self, 20, 76, int(y / 2) - 10, int(x / 2) - 38, movie_details["MovieTitleClean"],
+                         "ESC to close")
+        self.text_window = self.window.derwin(14, 72, 2, 2)
+        self.text_window.addstr(self.details)
+        self.description = ""
+        letter_count = 0
+        letters_in_line = 0
+        for item in description:
+            length = len(item)
+            if letter_count + length > 700:
+                self.description += "..."
+                break
+            if letters_in_line + length > 70:
+                self.description += "\n"
+                letters_in_line = 0
+            self.description += "{0} ".format(item)
+            letters_in_line += length + 1
+            letter_count += length + 1
+        self.text_window.addstr(self.description)
         curses.panel.update_panels()
         curses.doupdate()
